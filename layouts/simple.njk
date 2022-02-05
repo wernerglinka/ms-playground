@@ -1,0 +1,11 @@
+{% extends "layout.njk" %}
+
+{% block body %}
+  <section class="main-content">
+    <div class="container">
+      {{ contents | safe }}
+
+      {{ sections.content | md | safe }}
+    </div>
+  </section>
+{% endblock %}
