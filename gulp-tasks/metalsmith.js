@@ -88,10 +88,13 @@ module.exports = function metalsmith(callback) {
 
     .use(metameta({
       extCustomers: "../external-data/customers.json",
+      extCustomers2: "../external-data/customers2.json",
       site: "./data/siteMetadata.json",
       localCustomers: "./data/customersFile.json",
       folderCustomers: "./data/customers",
-      extFolderCustomers: "../external-data/extCustomers"
+      extFolderCustomers: "../external-data/extCustomers",
+      extFolderCustomers2: "../external-data/extCustomers2",
+      extFolderCustomers3: "../external-data/extCustomers3"
     }))
 
     .use(drafts())
