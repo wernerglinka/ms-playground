@@ -1,0 +1,6 @@
+extSections:
+  extSection1: "Abracadaba"
+  extSection2: "More Voodoo"
+  extSection3:
+    - "whasup"
+    - "watislos"

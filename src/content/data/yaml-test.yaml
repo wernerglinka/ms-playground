@@ -1,0 +1,6 @@
+sections:
+  section1: "Abracadaba"
+  section2: "More Voodoo"
+  section3:
+    - "whasup"
+    - "watislos"

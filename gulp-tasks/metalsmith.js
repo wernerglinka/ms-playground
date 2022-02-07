@@ -87,6 +87,8 @@ module.exports = function metalsmith(callback) {
     //}))
 
     .use(metameta({
+      yamlTest: "./data/yaml-test.yaml",
+      extYamlTest: "../external-data/ext-yaml-test.yaml",
       extCustomers: "../external-data/customers.json",
       extCustomers2: "../external-data/customers2.json",
       site: "./data/siteMetadata.json",

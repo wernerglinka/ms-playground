@@ -2,6 +2,7 @@
 const {promises: {readFile, readdir}} = require('fs');
 const path = require('path');
 const extension = path.extname;
+const yaml = require('js-yaml');
 
 /**
  * @typedef Options
@@ -20,6 +21,15 @@ const defaults = {}
   return Object.assign({}, defaults, options || {});
 }
 
+
+function yamlToJSON(string) {
+  try {
+    return yaml.load(string);
+  } catch (e) {
+    console.log(e);
+  }
+}
+
 /**
  * getExternalFile
  *
@@ -27,8 +37,24 @@ const defaults = {}
  * @returns Content of the file
  */
 async function getExternalFile(filePath) {
+  const fileExtension = extension(filePath);
   const fileBuffer = await readFile(filePath);
-  return JSON.parse(fileBuffer.toString());
+
+  let fileContent;
+
+  switch (fileExtension) {
+    case ".yaml" :
+    case ".yml" : 
+      fileContent = yamlToJSON(fileBuffer);
+      break;
+    case ".json" :
+      fileContent = JSON.parse(fileBuffer.toString());
+      break;
+    default:
+      fileContent = JSON.parse(fileBuffer.toString());
+  }
+
+  return fileContent;
 }
 
 /**
@@ -54,7 +80,6 @@ async function getDirectoryFilesContent(directoryPath, fileList) {
   });
   return await Promise.all(fileContent);
 }
-
 
 /**
  * A Metalsmith plugin to read files with metadata
@@ -121,6 +146,10 @@ function initMetameta(options){
             } catch (error) {
               console.log("Could not find file in files object");
               return done(error);
+            }
+
+            if ( fileExtension === ".yaml" || fileExtension === ".yml" ) {
+              metadata = JSON.stringify(yamlToJSON(metadata));
             }
 
             // to temp meta object
@@ -221,7 +250,6 @@ function initMetameta(options){
     
     // Promise.allSettled is used to invoke done()
     Promise.allSettled(allPromises).then(() => done());
-    
   };
 }
 
