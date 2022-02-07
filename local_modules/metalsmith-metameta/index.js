@@ -1,8 +1,11 @@
-/* eslint-disable */
+'use strict';
+
 const {promises: {readFile, readdir}} = require('fs');
 const path = require('path');
 const extension = path.extname;
 const yaml = require('js-yaml');
+const toml = require('toml');
+
 
 /**
  * @typedef Options
@@ -21,7 +24,11 @@ const defaults = {}
   return Object.assign({}, defaults, options || {});
 }
 
-
+/**
+ * YAML to JSON
+ * @param {*} string - YAML file
+ * @returns .json string
+ */
 function yamlToJSON(string) {
   try {
     return yaml.load(string);
@@ -31,55 +38,114 @@ function yamlToJSON(string) {
 }
 
 /**
+ * TOML to JSON
+ * @param {*} string - TOML file
+ * @returns .json string
+ */
+function tomlToJSON(string) {
+  try {
+    return JSON.parse(JSON.stringify(toml.parse(string)));
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+/**
  * getExternalFile
- *
+ * Reads file content in either .json, .yaml, .yml or .toml format
  * @param {*} filePath 
- * @returns Content of the file
+ * @returns Content of the file in .json
  */
 async function getExternalFile(filePath) {
   const fileExtension = extension(filePath);
   const fileBuffer = await readFile(filePath);
-
   let fileContent;
-
+  
   switch (fileExtension) {
     case ".yaml" :
-    case ".yml" : 
+    case ".yml"  : 
       fileContent = yamlToJSON(fileBuffer);
       break;
+    case ".toml" :
+      fileContent = tomlToJSON(fileBuffer);
+      break;
     case ".json" :
-      fileContent = JSON.parse(fileBuffer.toString());
+      fileContent = JSON.parse(fileBuffer.toString()); // remove line breaks etc from the filebuffer
       break;
     default:
       fileContent = JSON.parse(fileBuffer.toString());
   }
 
   return fileContent;
-}
+};
 
 /**
  * getDirectoryFiles
- * 
  * @param {*} directoryPath 
  * @returns List of all files in the directory
  */
 async function getDirectoryFiles(directoryPath) {
-  return await readdir(directoryPath);
-}
+  const fileList =  await readdir(directoryPath);
+  return await getDirectoryFilesContent(directoryPath, fileList);
+
+};
 
 /**
  * getDirectoryFilesContent
- * 
  * @param {*} directoryPath 
  * @param {*} fileList 
- * @returns TRhe content of all files in a directory
+ * @returns The content of all files in a directory
  */
 async function getDirectoryFilesContent(directoryPath, fileList) {
   const fileContent = await fileList.map(async file => {
     return await getExternalFile(path.join(path.join(directoryPath, file))); 
   });
   return await Promise.all(fileContent);
+};
+
+/**
+ * getFileObject
+ * @param {*} filePath 
+ * @param {*} optionKey 
+ * @param {*} allMetadata 
+ * @returns promise to push metafile object to metalsmith metadata object
+ */
+async function getFileObject(filePath, optionKey, allMetadata) {
+  return getExternalFile(filePath)
+    .then(fileBuffer => {
+      allMetadata[optionKey] = fileBuffer;
+    });
 }
+
+/**
+ * getDirectoryObject
+ * @param {*} directoryPath 
+ * @param {*} optionKey 
+ * @param {*} allMetadata 
+ * @returns promise to push concatenated metafile object of all directory files to metalsmith metadata object
+ */
+async function getDirectoryObject(directoryPath, optionKey, allMetadata) {
+  return getDirectoryFiles(directoryPath)
+    .then(fileBuffers => {
+      const groupMetadata = [];
+      fileBuffers.forEach(fileBuffer => {
+        groupMetadata.push(JSON.parse(JSON.stringify(fileBuffer))); 
+      })
+
+      if (groupMetadata.length) {
+        allMetadata[optionKey] = groupMetadata;
+      }
+      else {
+        console.log(`No files found in this directory "${key}"`);
+      }
+      
+    })
+    .catch(error => {
+      console.error(error.message);
+      process.exit(1);
+    });
+};
+  
 
 /**
  * A Metalsmith plugin to read files with metadata
@@ -117,11 +183,13 @@ function initMetameta(options){
     // used with Promise.allSettled to invoke done()
     const allPromises = [];
 
-    // loop over all metadata files/directories
-    Object.keys(options).forEach(function(optionFilepath) {
+    // loop over all options/metadata files/directories
+    Object.keys(options).forEach(function(optionKey) {
 
       // check if file is located inside the metalsmith source directory
-      const metaFilePath = options[optionFilepath];
+      const metaFilePath = options[optionKey];
+
+      // convention: "./" inside, "../" outside of metasmith source
       const isLocal = metaFilePath.startsWith("./");
       const isExternal = metaFilePath.startsWith("../");
       
@@ -136,10 +204,10 @@ function initMetameta(options){
         const key = metaFilePath.slice(2);
         let metadata;
 
-        // check if the optionFilepath element has a file exension
+        // check if the optionKey element has a file exension
         const fileExtension = extension(metaFilePath);
         if ( fileExtension ) {
-          if ( fileExtension === ".json" || fileExtension === ".yaml" || fileExtension === ".yml") {
+          if ( fileExtension === ".json" || fileExtension === ".yaml" || fileExtension === ".yml" || fileExtension === ".toml") {
             // get the data from file object
             try {
               metadata = files[key].contents.toString();
@@ -152,8 +220,14 @@ function initMetameta(options){
               metadata = JSON.stringify(yamlToJSON(metadata));
             }
 
+            if ( fileExtension === ".toml" ) {
+              metadata = JSON.stringify(toml.parse(metadata));
+            }
+
+
+
             // to temp meta object
-            allMetadata[optionFilepath] = JSON.parse(metadata);
+            allMetadata[optionKey] = JSON.parse(metadata);
             // ... and remove this file from the metalsmith build process
             delete files[key];
 
@@ -171,7 +245,7 @@ function initMetameta(options){
           });
 
           if (groupMetadata.length) {
-            allMetadata[optionFilepath] = groupMetadata;
+            allMetadata[optionKey] = groupMetadata;
           }
           else {
             console.log(`No files found in this directory "${key}"`);
@@ -189,53 +263,28 @@ function initMetameta(options){
         // get object key
         const key = metaFilePath.slice(3);
 
-        // check if the optionFilepath has a file exension
+        // check if the optionKey has a file exension
         const fileExtension = extension(metaFilePath);
         if ( fileExtension ) {
-          if ( fileExtension === ".json" || fileExtension === ".yaml" || fileExtension === ".yml") {
-            
+          if ( fileExtension === ".json" || fileExtension === ".yaml" || fileExtension === ".yml" || fileExtension === ".toml") {
             // read external file content and store in metadata object
-            const extFilePromise = getExternalFile(path.join(metalsmith._directory, key))
-              .then(fileBuffer => {
-                allMetadata[optionFilepath] = fileBuffer;
-              })
+            const filePath = path.join(metalsmith._directory, key);
+            const extFilePromise = getFileObject(filePath, optionKey, allMetadata)
 
-              // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
-              allPromises.push(extFilePromise);
+            // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
+            allPromises.push(extFilePromise);
 
             // indicate filepath is valid
             validFilepath = true;
           } 
         } else {
           // assume this is a directory
+          // get content of all files in this directory, concatenated into one metadata object
           const directoryPath = path.join(metalsmith._directory, key);
-          
-          // get content of all files in this directory concatenate into one metadata object
-          const extDirectoryPromise = getDirectoryFiles(directoryPath)
-            .then(fileList => {
-              return getDirectoryFilesContent(directoryPath, fileList);
-            })
-            .then(fileBuffers => {
-              const groupMetadata = [];
-              fileBuffers.forEach(fileBuffer => {
-                groupMetadata.push(JSON.parse(JSON.stringify(fileBuffer))); 
-              })
-
-              if (groupMetadata.length) {
-                allMetadata[optionFilepath] = groupMetadata;
-              }
-              else {
-                console.log(`No files found in this directory "${key}"`);
-              }
-              
-            })
-            .catch(error => {
-              console.error(error.message);
-              process.exit(1);
-            });
-             
-            // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
-            allPromises.push(extDirectoryPromise);
+          const extDirectoryPromise =  getDirectoryObject(directoryPath, optionKey, allMetadata);
+           
+          // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
+          allPromises.push(extDirectoryPromise);
 
           // indicate filepath is valid
           validFilepath = true;

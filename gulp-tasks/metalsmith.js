@@ -89,14 +89,16 @@ module.exports = function metalsmith(callback) {
     .use(metameta({
       yamlTest: "./data/yaml-test.yaml",
       extYamlTest: "../external-data/ext-yaml-test.yaml",
-      extCustomers: "../external-data/customers.json",
-      extCustomers2: "../external-data/customers2.json",
+      tomlTest: "./data/toml-test.toml",
+      extTomlTest: "../external-data/ext-toml-test.toml",
+      extJsonTest: "../external-data/ext-json-test.json",
+      extJsonTest2: "../external-data/ext-json-test2.json",
       site: "./data/siteMetadata.json",
-      localCustomers: "./data/customersFile.json",
-      folderCustomers: "./data/customers",
-      extFolderCustomers: "../external-data/extCustomers",
-      extFolderCustomers2: "../external-data/extCustomers2",
-      extFolderCustomers3: "../external-data/extCustomers3"
+      jsonTest: "./data/json-test.json",
+      jsonFolderTest: "./data/json-folder-test",
+      extJsonTestFolder: "../external-data/ext-json-folder-test",
+      extJsonTestFolder2: "../external-data/ext-json-folder-test2",
+      extJsonTestFolder3: "../external-data/ext-json-folder-test3"
     }))
 
     .use(drafts())
@@ -114,6 +116,8 @@ module.exports = function metalsmith(callback) {
 
     // layouts MUST come after permalinks so the template has access to the "path" variable
     .use(layouts(templateConfig))
+
+    
 
     .use(
       assets({

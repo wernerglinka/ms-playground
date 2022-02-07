@@ -53,7 +53,8 @@
     "nunjucks-markdown-filter": "^0.1.0",
     "sass": "^1.43.4",
     "showdown": "^1.9.1",
-    "swup": "^2.0.14"
+    "swup": "^2.0.14",
+    "toml": "^3.0.0"
   },
   "devDependencies": {
     "eslint": "^8.3.0",

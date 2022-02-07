@@ -20,6 +20,10 @@ sections:
 
 # Markdown page... testing markdown partials plugin
 
+## TOML
+{{ tomlTest | dump | safe }}
+## External TOML
+{{ extTomlTest | dump | safe }}
 ## YAML
 {{ yamlTest | dump | safe }}
 ## External YAML
@@ -27,19 +31,19 @@ sections:
 ## site
 {{ site | dump | safe }}
 ## local file
-{{ localCustomers | dump | safe }}
+{{ jsonTest | dump | safe }}
 ## local folder
-{{ folderCustomers | dump | safe }}
+{{ jsonFolderTest | dump | safe }}
 ## ext file
-{{ extCustomers | dump | safe }}
+{{ extJsonTest | dump | safe }}
 ## ext file2
-{{ extCustomers2 | dump | safe }}
+{{ extJsonTest2 | dump | safe }}
 ## ext folder
-{{ extFolderCustomers | dump | safe }}
+{{ extJsonTestFolder | dump | safe }}
 ## ext folder 2
-{{ extFolderCustomers2 | dump | safe }}
+{{ extJsonTestFolder2 | dump | safe }}
 ## ext folder 3
-{{ extFolderCustomers3 | dump | safe }}
+{{ extJsonTestFolder3 | dump | safe }}
 
 Nullam quis risus eget urna mollis ornare vel eu leo. Curabitur blandit tempus porttitor. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Donec sed odio dui.
 
