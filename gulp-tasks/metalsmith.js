@@ -81,7 +81,7 @@ module.exports = function metalsmith(callback) {
     //  nav: "data/siteNavigation.json"
     //}))
 
-    .use(metadata({
+    .use(metameta({
       yamlTest: "./src/content/data/yaml-test.yaml",
       extYamlTest: "./external-data/ext-yaml-test.yaml",
       tomlTest: "./src/content/data/toml-test.toml",

@@ -1,5 +1,6 @@
 'use strict';
 
+const debug = require('debug')('metalsmith-metadata');
 const {promises: {readFile, readdir}} = require('fs');
 const path = require('path');
 const extension = path.extname;
@@ -33,7 +34,7 @@ function yamlToJSON(string) {
   try {
     return yaml.load(string);
   } catch (e) {
-    console.log(e);
+    throw(`error converting yaml to json: ${e}`);
   }
 }
 
@@ -44,9 +45,9 @@ function yamlToJSON(string) {
  */
 function tomlToJSON(string) {
   try {
-    return JSON.parse(JSON.stringify(toml.parse(string)));
+    return toml.parse(string);
   } catch (e) {
-    console.log(e);
+    throw(`error converting toml to json: ${e}`);
   }
 }
 
@@ -75,7 +76,6 @@ async function getExternalFile(filePath) {
     default:
       fileContent = JSON.parse(fileBuffer.toString());
   }
-
   return fileContent;
 };
 
@@ -98,7 +98,7 @@ async function getDirectoryFiles(directoryPath) {
  */
 async function getDirectoryFilesContent(directoryPath, fileList) {
   const fileContent = await fileList.map(async file => {
-    return await getExternalFile(path.join(path.join(directoryPath, file))); 
+    return await getExternalFile(path.join(directoryPath, file)); 
   });
   return await Promise.all(fileContent);
 };
@@ -129,20 +129,18 @@ async function getDirectoryObject(directoryPath, optionKey, allMetadata) {
     .then(fileBuffers => {
       const groupMetadata = [];
       fileBuffers.forEach(fileBuffer => {
-        groupMetadata.push(JSON.parse(JSON.stringify(fileBuffer))); 
+        groupMetadata.push(fileBuffer); 
       })
 
       if (groupMetadata.length) {
         allMetadata[optionKey] = groupMetadata;
       }
       else {
-        console.log(`No files found in this directory "${key}"`);
+        done(`No files found in this directory "${key}"`);
       }
-      
     })
-    .catch(error => {
-      console.error(error.message);
-      process.exit(1);
+    .catch(e => {
+      done(e.message);
     });
 };
   
@@ -173,7 +171,7 @@ async function getDirectoryObject(directoryPath, optionKey, allMetadata) {
  * @returns {import('metalsmith').Plugin}
  */
 
-function initMetameta(options){
+function initMetadata(options){
   options = normalizeOptions(options);
 
   return function metameta(files, metalsmith, done){
@@ -188,11 +186,13 @@ function initMetameta(options){
 
       // check if file is located inside the metalsmith source directory
       const metaFilePath = options[optionKey];
-    
-      const msSourceFolder = metalsmith._source;
+
+      const msDirectory = metalsmith.directory();
+      const srcDirectory = metalsmith.source();
+      const msSourceFolder = srcDirectory.replace(msDirectory, ".");
 
       const isLocal = metaFilePath.startsWith(msSourceFolder);
-  
+
       // flag to be reset when valid filepath is detected
       let validFilepath = false;
   
@@ -201,7 +201,7 @@ function initMetameta(options){
        */
       if (isLocal) {
         // get object key from the options
-        const key = metaFilePath.replace(`${msSourceFolder}/`, "");
+        const key = metaFilePath.replace(`${msSourceFolder}${path.sep}`, "");
 
         // check if the optionKey element has a file exension
         const fileExtension = extension(metaFilePath);
@@ -212,8 +212,7 @@ function initMetameta(options){
             try {
               metadata = files[key].contents.toString();
             } catch (error) {
-              console.log("Could not find file in files object");
-              return done(error);
+              done(error);
             }
 
             if ( fileExtension === ".yaml" || fileExtension === ".yml" ) {
@@ -223,8 +222,6 @@ function initMetameta(options){
             if ( fileExtension === ".toml" ) {
               metadata = JSON.stringify(toml.parse(metadata));
             }
-
-
 
             // to temp meta object
             allMetadata[optionKey] = JSON.parse(metadata);
@@ -248,7 +245,7 @@ function initMetameta(options){
             allMetadata[optionKey] = groupMetadata;
           }
           else {
-            console.log(`No files found in this directory "${key}"`);
+            done(`No files found in this directory "${key}"`);
           }
 
           // indicate filepath is valid
@@ -292,8 +289,7 @@ function initMetameta(options){
       }
 
       if (!validFilepath) {
-        const error = `${metaFilePath} is not a valid metafile path. Path must be relative to Metalsmith root`;
-        done(error);
+        done(`${metaFilePath} is not a valid metafile path. Path must be relative to Metalsmith root`);
       }
     });
     
@@ -302,4 +298,4 @@ function initMetameta(options){
   };
 }
 
-module.exports = initMetameta;
+module.exports = initMetadata;

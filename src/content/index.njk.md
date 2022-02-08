@@ -20,6 +20,8 @@ sections:
 
 # Markdown page... testing markdown partials plugin
 
+## empty folder
+{{ emptyFolderTest | dump | safe }}
 ## TOML
 {{ tomlTest | dump | safe }}
 ## External TOML
