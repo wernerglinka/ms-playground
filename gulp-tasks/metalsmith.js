@@ -14,14 +14,10 @@ const CaptureTag = require('nunjucks-capture');
 
 const util = require('gulp-util');
 
-const showdown = require('showdown');
-const converter = new showdown.Converter();
-
 // functions to extend Nunjucks environment
 const toUpper = string => string.toUpperCase();
 const spaceToDash = string => string.replace(/\s+/g, '-');
 const condenseTitle = string => string.toLowerCase().replace(/\s+/g, '');
-const mdToHTML = string => converter.makeHtml(string);
 const UTCdate = date => date.toUTCString();
 const trimSlashes = string => string.replace(/(^\/)|(\/$)/g, "");
 const md = (mdString) => {
@@ -56,7 +52,6 @@ const templateConfig = {
       toUpper,
       spaceToDash,
       condenseTitle,
-      mdToHTML,
       UTCdate,
       trimSlashes,
       md,
@@ -86,19 +81,19 @@ module.exports = function metalsmith(callback) {
     //  nav: "data/siteNavigation.json"
     //}))
 
-    .use(metameta({
-      yamlTest: "./data/yaml-test.yaml",
-      extYamlTest: "../external-data/ext-yaml-test.yaml",
-      tomlTest: "./data/toml-test.toml",
-      extTomlTest: "../external-data/ext-toml-test.toml",
-      extJsonTest: "../external-data/ext-json-test.json",
-      extJsonTest2: "../external-data/ext-json-test2.json",
-      site: "./data/siteMetadata.json",
-      jsonTest: "./data/json-test.json",
-      jsonFolderTest: "./data/json-folder-test",
-      extJsonTestFolder: "../external-data/ext-json-folder-test",
-      extJsonTestFolder2: "../external-data/ext-json-folder-test2",
-      extJsonTestFolder3: "../external-data/ext-json-folder-test3"
+    .use(metadata({
+      yamlTest: "./src/content/data/yaml-test.yaml",
+      extYamlTest: "./external-data/ext-yaml-test.yaml",
+      tomlTest: "./src/content/data/toml-test.toml",
+      extTomlTest: "./external-data/ext-toml-test.toml",
+      extJsonTest: "./external-data/ext-json-test.json",
+      extJsonTest2: "./external-data/ext-json-test2.json",
+      site: "./src/content/data/siteMetadata.json",
+      jsonTest: "./src/content/data/json-test.json",
+      jsonFolderTest: "./src/content/data/json-folder-test",
+      extJsonTestFolder: "./external-data/ext-json-folder-test",
+      extJsonTestFolder2: "./external-data/ext-json-folder-test2",
+      extJsonTestFolder3: "./external-data/ext-json-folder-test3"
     }))
 
     .use(drafts())

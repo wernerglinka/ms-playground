@@ -188,11 +188,11 @@ function initMetameta(options){
 
       // check if file is located inside the metalsmith source directory
       const metaFilePath = options[optionKey];
+    
+      const msSourceFolder = metalsmith._source;
 
-      // convention: "./" inside, "../" outside of metasmith source
-      const isLocal = metaFilePath.startsWith("./");
-      const isExternal = metaFilePath.startsWith("../");
-      
+      const isLocal = metaFilePath.startsWith(msSourceFolder);
+  
       // flag to be reset when valid filepath is detected
       let validFilepath = false;
   
@@ -201,13 +201,13 @@ function initMetameta(options){
        */
       if (isLocal) {
         // get object key from the options
-        const key = metaFilePath.slice(2);
-        let metadata;
+        const key = metaFilePath.replace(`${msSourceFolder}/`, "");
 
         // check if the optionKey element has a file exension
         const fileExtension = extension(metaFilePath);
         if ( fileExtension ) {
           if ( fileExtension === ".json" || fileExtension === ".yaml" || fileExtension === ".yml" || fileExtension === ".toml") {
+            let metadata;
             // get the data from file object
             try {
               metadata = files[key].contents.toString();
@@ -254,14 +254,14 @@ function initMetameta(options){
           // indicate filepath is valid
           validFilepath = true;
         }
-      }
-
+      } else {
       /*
+       * isExternal
        * if file or directory is external we get the metadata from respective files
        */
-      if (isExternal) {
+
         // get object key
-        const key = metaFilePath.slice(3);
+        const key = metaFilePath.slice(2);
 
         // check if the optionKey has a file exension
         const fileExtension = extension(metaFilePath);

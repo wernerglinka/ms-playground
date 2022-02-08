@@ -7,6 +7,8 @@
  */
  module.exports = function monitor() {
   return function plugin(files, metalsmith, done) {
+    console.log(metalsmith.metadata());
+    /*
     Object.keys(files).forEach(file => {
   
       // we only look at pages
@@ -14,6 +16,7 @@
         console.log(files[file]);
       }
     });
+    */
     done();
   };
 };
