@@ -1,7 +1,7 @@
 const Metalsmith = require('metalsmith');
 const assets = require('metalsmith-assets');
 const drafts = require('@metalsmith/drafts');
-const metadata = require('metalsmith-metadata');
+const metadata = require('@metalsmith/metadata');
 const layouts = require('@metalsmith/layouts');
 const inplace = require('metalsmith-in-place');
 const permalinks = require('@metalsmith/permalinks');
@@ -81,7 +81,7 @@ module.exports = function metalsmith(callback) {
     //  nav: "data/siteNavigation.json"
     //}))
 
-    .use(metameta({
+    .use(metadata({
       yamlTest: "./src/content/data/yaml-test.yaml",
       extYamlTest: "./external-data/ext-yaml-test.yaml",
       tomlTest: "./src/content/data/toml-test.toml",

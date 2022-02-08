@@ -16,6 +16,7 @@
   "dependencies": {
     "@metalsmith/drafts": "^1.1.1",
     "@metalsmith/layouts": "^2.4.0",
+    "@metalsmith/metadata": "github:metalsmith/metadata",
     "@metalsmith/permalinks": "^2.3.0",
     "@metalsmith/remove": "^1.1.1",
     "async": "^3.2.3",
