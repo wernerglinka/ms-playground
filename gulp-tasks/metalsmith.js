@@ -7,6 +7,8 @@ const inplace = require('metalsmith-in-place');
 const permalinks = require('@metalsmith/permalinks');
 const writeMetadata = require('metalsmith-writemetadata');
 
+const blogLists = require("../local_modules/metalsmith-blog-lists");
+
 
 const marked = require('marked');
 
@@ -42,7 +44,7 @@ const workingDir = path.join(__dirname, '../');
 //const getExternalPagesGraphQL = require('../local_modules/wp-graphql-pages');
 
 const mdPartials = require('metalsmith-markdown-partials');
-const metameta = require('../local_modules/metalsmith-metameta');
+//const metameta = require('../local_modules/metalsmith-metameta');
 
 // Define engine options for the inplace and layouts plugins
 const templateConfig = {
@@ -82,28 +84,22 @@ module.exports = function metalsmith(callback) {
     //}))
 
     .use(metadata({
-      yamlTest: "./src/content/data/yaml-test.yaml",
-      extYamlTest: "./external-data/ext-yaml-test.yaml",
-      tomlTest: "./src/content/data/toml-test.toml",
-      extTomlTest: "./external-data/ext-toml-test.toml",
-      extJsonTest: "./external-data/ext-json-test.json",
-      extJsonTest2: "./external-data/ext-json-test2.json",
       site: "./src/content/data/siteMetadata.json",
-      jsonTest: "./src/content/data/json-test.json",
-      jsonFolderTest: "./src/content/data/json-folder-test",
-      extJsonTestFolder: "./external-data/ext-json-folder-test",
-      extJsonTestFolder2: "./external-data/ext-json-folder-test2",
-      extJsonTestFolder3: "./external-data/ext-json-folder-test3"
     }))
 
     .use(drafts())
 
-    .use(mdPartials({
-      libraryPath: './src/content/markdown-partials/',
-      fileSuffix: '.md.njk',
+    .use(blogLists({
+      latestQuantity: 4,
+      featuredQuantity: 3,
+      featuredPostSortOrder: "desc",
+      fileExtension: ".md.njk"
     }))
 
-    
+    //.use(mdPartials({
+    //  libraryPath: './src/content/markdown-partials/',
+    //  fileSuffix: '.md.njk',
+    //}))
 
     .use(inplace(templateConfig))
 

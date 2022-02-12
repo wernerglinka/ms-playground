@@ -205,8 +205,9 @@ function initMetadata(options){
 
         // check if the optionKey element has a file exension
         const fileExtension = extension(metaFilePath);
+
         if ( fileExtension ) {
-          if ( fileExtension === ".json" || fileExtension === ".yaml" || fileExtension === ".yml" || fileExtension === ".toml") {
+          if ( !!fileExtension.match('(ya?ml|toml|json)') ) {
             let metadata;
             // get the data from file object
             try {
@@ -214,13 +215,11 @@ function initMetadata(options){
             } catch (error) {
               done(error);
             }
-
-            if ( fileExtension === ".yaml" || fileExtension === ".yml" ) {
+            if ( !!fileExtension.match('(ya?ml)') ) {
               metadata = JSON.stringify(yamlToJSON(metadata));
             }
-
             if ( fileExtension === ".toml" ) {
-              metadata = JSON.stringify(toml.parse(metadata));
+              metadata = JSON.stringify(tomlToJSON(metadata));
             }
 
             // to temp meta object
@@ -230,6 +229,8 @@ function initMetadata(options){
 
             // indicate filepath is valid
             validFilepath = true;
+          } else {
+            done(`${fileExtension} is not a valid file type`);
           }
         } else {
           // assume this is a directory, all files in this directory will be concatenated into one 
@@ -237,7 +238,28 @@ function initMetadata(options){
           const groupMetadata = [];
           Object.keys(files).forEach(function(file) {
             if (file.includes(key)) {
-              groupMetadata.push(JSON.parse(files[file].contents.toString()));
+
+              const fileExtension = extension(file);
+              if ( !!fileExtension.match('(ya?ml|toml|json)') ) {
+                let metadata;
+                // get the data from file object
+                try {
+                  metadata = files[file].contents.toString();
+                } catch (error) {
+                  done(error);
+                }
+                if ( fileExtension === ".yaml" || fileExtension === ".yml" ) {
+                  metadata = JSON.stringify(yamlToJSON(metadata));
+                }
+                if ( fileExtension === ".toml" ) {
+                  metadata = JSON.stringify(tomlToJSON(metadata));
+                }
+    
+                groupMetadata.push(JSON.parse(metadata));
+
+              } else {
+                done(`${fileExtension} is not a valid file type`);
+              }
             }
           });
 
@@ -263,7 +285,7 @@ function initMetadata(options){
         // check if the optionKey has a file exension
         const fileExtension = extension(metaFilePath);
         if ( fileExtension ) {
-          if ( fileExtension === ".json" || fileExtension === ".yaml" || fileExtension === ".yml" || fileExtension === ".toml") {
+          if ( !!fileExtension.match('(ya?ml|toml|json)') ) {
             // read external file content and store in metadata object
             const filePath = path.join(metalsmith._directory, key);
             const extFilePromise = getFileObject(filePath, optionKey, allMetadata)

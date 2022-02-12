@@ -2,6 +2,14 @@
 
 {% block body %}
   <section class="main-content">
+
+  {{ latestBlogPosts | dump | safe }}
+  {{ featuredBlogPosts | dump | safe }}
+  {{ allSortedBlogPosts | dump | safe }}
+  {{ annualizedBlogPosts | dump | safe }}
+  {{ unsortedAnnualizedBlogPosts | dump | safe }}
+
+
     <div class="container">
       {{ contents | safe }}
 

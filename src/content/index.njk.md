@@ -20,33 +20,6 @@ sections:
 
 # Markdown page... testing markdown partials plugin
 
-## empty folder
-{{ emptyFolderTest | dump | safe }}
-## TOML
-{{ tomlTest | dump | safe }}
-## External TOML
-{{ extTomlTest | dump | safe }}
-## YAML
-{{ yamlTest | dump | safe }}
-## External YAML
-{{ extYamlTest | dump | safe }}
-## site
-{{ site | dump | safe }}
-## local file
-{{ jsonTest | dump | safe }}
-## local folder
-{{ jsonFolderTest | dump | safe }}
-## ext file
-{{ extJsonTest | dump | safe }}
-## ext file2
-{{ extJsonTest2 | dump | safe }}
-## ext folder
-{{ extJsonTestFolder | dump | safe }}
-## ext folder 2
-{{ extJsonTestFolder2 | dump | safe }}
-## ext folder 3
-{{ extJsonTestFolder3 | dump | safe }}
-
 Nullam quis risus eget urna mollis ornare vel eu leo. Curabitur blandit tempus porttitor. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Donec sed odio dui.
 
 {#md "test-partial.md" #}
