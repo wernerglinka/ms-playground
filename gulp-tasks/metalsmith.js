@@ -8,6 +8,7 @@ const permalinks = require('@metalsmith/permalinks');
 const writeMetadata = require('metalsmith-writemetadata');
 
 const blogLists = require("../local_modules/metalsmith-blog-lists");
+//const blogLists = require("metalsmith-blog-lists");
 
 
 const marked = require('marked');
@@ -20,7 +21,8 @@ const util = require('gulp-util');
 const toUpper = string => string.toUpperCase();
 const spaceToDash = string => string.replace(/\s+/g, '-');
 const condenseTitle = string => string.toLowerCase().replace(/\s+/g, '');
-const UTCdate = date => date.toUTCString();
+const UTCdate = date => date.toUTCString("M d, yyyy");
+const blogDate = date => date.toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 const trimSlashes = string => string.replace(/(^\/)|(\/$)/g, "");
 const md = (mdString) => {
   try {
@@ -55,6 +57,7 @@ const templateConfig = {
       spaceToDash,
       condenseTitle,
       UTCdate,
+      blogDate,
       trimSlashes,
       md,
     },
@@ -92,7 +95,7 @@ module.exports = function metalsmith(callback) {
     .use(blogLists({
       latestQuantity: 4,
       featuredQuantity: 3,
-      featuredPostSortOrder: "desc",
+      featuredPostSortOrder: "asc",
       fileExtension: ".md.njk"
     }))
 

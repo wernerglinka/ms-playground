@@ -61,11 +61,12 @@ function initBlogLists(options) {
         // create a context influenced list like showing all other posts by
         // a particular author when we show a blog post.
         temp = {
-            "title":  thisFile.title,
+            "title":  thisFile.blogTitle || thisFile.title,
             "date":   new Date(thisFile.date),
             "author": thisFile.author,
             "path":   filePath,
             "image":  thisFile.image,
+            "order":  thisFile.featuredBlogpostOrder
         }
         allSortedBlogPosts.push(temp);
 
@@ -96,7 +97,6 @@ function initBlogLists(options) {
 
     // create the yearly archive list from array allSortedBlogPosts
     // get the year from the blog date
-    
     const blogYears = [];
     allSortedBlogPosts.forEach(function(post, index) {
         const d = new Date(post.date);
@@ -107,7 +107,6 @@ function initBlogLists(options) {
     });
 
     const yearArrayKeys = new Set(blogYears);
-
     yearArrayKeys.forEach(function(year) {
       const temp = [];
       allSortedBlogPosts.forEach(function(post, index) {
@@ -119,13 +118,16 @@ function initBlogLists(options) {
           temp.push(post);
         }
       });
-      annualizedBlogPosts.push({[year]: temp});
+      annualizedBlogPosts.push({
+        "year": year,
+        "posts": temp
+      });
     });
 
     // sort unsortedAnnualizedBlogPosts by newest year first
     annualizedBlogPosts.sort(function(a, b) {
-      a = Object.keys(a);
-      b = Object.keys(b);
+      a = a.year;
+      b = b.year;
       return a > b ? -1 : (a < b ? 1 : 0);
     });
 

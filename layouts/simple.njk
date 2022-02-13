@@ -7,7 +7,20 @@
   {{ featuredBlogPosts | dump | safe }}
   {{ allSortedBlogPosts | dump | safe }}
   {{ annualizedBlogPosts | dump | safe }}
-  {{ unsortedAnnualizedBlogPosts | dump | safe }}
+  
+
+  <section>
+    <h2>All blogposts:</h2>
+    <ul>
+      {% for post in featuredBlogPosts %}
+      <li>
+        <a href="/{{post.path}}">{{post.title}}</a>
+        <p>{{post.date | blogDate}}
+        <p>{{post.author}}</p>
+      </li>
+      {% endfor%}
+    </ul>
+  </section>
 
 
     <div class="container">
