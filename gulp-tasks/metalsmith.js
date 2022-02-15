@@ -7,8 +7,8 @@ const inplace = require('metalsmith-in-place');
 const permalinks = require('@metalsmith/permalinks');
 const writeMetadata = require('metalsmith-writemetadata');
 
-const blogLists = require("../local_modules/metalsmith-blog-lists");
-//const blogLists = require("metalsmith-blog-lists");
+// const blogLists = require("../local_modules/metalsmith-blog-lists");
+const blogLists = require("metalsmith-blog-lists");
 
 
 const marked = require('marked');
@@ -46,7 +46,7 @@ const workingDir = path.join(__dirname, '../');
 //const getExternalPagesGraphQL = require('../local_modules/wp-graphql-pages');
 
 const mdPartials = require('metalsmith-markdown-partials');
-//const metameta = require('../local_modules/metalsmith-metameta');
+const metameta = require('../local_modules/metalsmith-metameta');
 
 // Define engine options for the inplace and layouts plugins
 const templateConfig = {
@@ -81,28 +81,37 @@ module.exports = function metalsmith(callback) {
       buildDate: new Date(),
     })
 
-    //.use(metadata({
-    //  site: "data/siteMetadata.json",
-    //  nav: "data/siteNavigation.json"
-    //}))
-
-    .use(metadata({
+    .use(metameta({
       site: "./src/content/data/siteMetadata.json",
+      localJsonTest: "./src/content/data/json-test.json",
+      localYamlTest: "./src/content/data/yaml-test.yaml",
+      localTomlTest: "./src/content/data/toml-test.toml",
+      localMixedFolder: "./src/content/data/local-folder-mixed",
+      extMixedFolder: "./external-data/ext-folder-mixed",
+      extJsonTest: "./external-data/ext-json-test.json",
+      extTomlTest: "./external-data/ext-toml-test.toml"
     }))
+    
+    //.use(metameta())
 
     .use(drafts())
 
+    /*
     .use(blogLists({
       latestQuantity: 4,
       featuredQuantity: 3,
       featuredPostSortOrder: "asc",
-      fileExtension: ".md.njk"
+      fileExtension: ".md.njk",
+      blogDirectoryName: "blog"
     }))
-
-    //.use(mdPartials({
-    //  libraryPath: './src/content/markdown-partials/',
-    //  fileSuffix: '.md.njk',
-    //}))
+    */
+   
+    /*
+    .use(mdPartials({
+      libraryPath: './src/content/markdown-partials/',
+      fileSuffix: '.md.njk',
+    }))
+    */
 
     .use(inplace(templateConfig))
 

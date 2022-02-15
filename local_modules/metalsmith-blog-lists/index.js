@@ -1,6 +1,5 @@
 const debug = require('debug')('metalsmith-blog-lists');
 const path = require('path');
-const extension = path.extname;
 
 /**
  * @typedef Options
@@ -12,7 +11,8 @@ const defaults = {
   latestQuantity: 3,
   featuredQuantity: 3,
   featuredPostSortOrder: "desc",
-  fileExtension: ".md"
+  fileExtension: ".md",
+  blogDirectoryName: "./blog"
 }
 
 /**
@@ -50,10 +50,10 @@ function initBlogLists(options) {
     Object.keys(files).forEach(function(file){
       const thisFile = files[file];
       
-      const isBlogPostFileType = file.includes(options.fileExtension);
+      const isBlogPostFileType = file.endsWith(options.fileExtension);
 
-      // we only look at blog posts
-      if ((file.indexOf('blog/') !== -1) && isBlogPostFileType) {
+      // we only look at blog post
+      if ((file.indexOf(options.blogDirectoryName) !== -1) && isBlogPostFileType) {
         const filePath = file.replace(options.fileExtension, "");
 
         // assemble a sorted all blogs list

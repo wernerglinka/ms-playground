@@ -7,8 +7,25 @@
   {{ featuredBlogPosts | dump | safe }}
   {{ allSortedBlogPosts | dump | safe }}
   {{ annualizedBlogPosts | dump | safe }}
-  
 
+  <p>Local JSON Test</p>
+  {{ localJsonTest | dump | safe }}
+  <p>Local YAML Test</p>
+  {{ localYamlTest | dump | safe }}
+  <p>Local TOML Test</p>
+  {{ localTomlTest | dump | safe }}
+  <p>Local mixed Folder Test</p>
+  {{ localMixedFolder | dump | safe }}
+  <p>External Mixed Folder Test</p>
+  {{ extMixedFolder | dump | safe }}
+  <p>External JSON Test</p>
+  {{ extJsonTest | dump | safe }}
+  <p>External TOML Test</p>
+  {{ extTomlTest | dump | safe }}
+  <p>Site Data</p>
+  {{ site | dump | safe }}
+
+  {#
   <section>
     <h2>All blogposts:</h2>
     <ul>
@@ -21,7 +38,7 @@
       {% endfor%}
     </ul>
   </section>
-
+  #}
 
     <div class="container">
       {{ contents | safe }}
