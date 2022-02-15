@@ -250,8 +250,6 @@ function initMetadata(options) {
       // convert dir path to be relative to metalsmith source as in files object key
       const filePath = relative(metalsmith.source(), file.path);
       const fileExtension = extension(filePath);
-      // flag to be reset when valid filepath is detected
-      let validFilepath = false;
 
       // get the data from file object
       const metadata = JSON.stringify(toJson(files[filePath].contents, fileExtension));
@@ -263,9 +261,6 @@ function initMetadata(options) {
 
       // ... and remove this file from the metalsmith build process
       delete files[file.key];
-
-      // indicate filepath is valid
-      validFilepath = true;
     });
 
     localDirs.forEach(function(dir) {
@@ -273,9 +268,6 @@ function initMetadata(options) {
       // convert dir path to be relative to metalsmith source
       const filePath = relative(metalsmith.source(), dir.path);
 
-      // flag to be reset when valid filepath is detected
-      let validFilepath = false;
-      
       const groupMetadata = [];
       Object.keys(files).forEach(function (file) {
         const fileExtension = extension(file);
@@ -294,36 +286,22 @@ function initMetadata(options) {
       } else {
         done(`No files found in this directory "${dir}"`);
       }
-      // indicate filepath is valid
-      validFilepath = true;
     });
 
     externalFiles.forEach(function(file) {
-      // flag to be reset when valid filepath is detected
-      let validFilepath = false;
-
       const extFilePromise = getFileObject(file.path, file.key, allMetadata);
 
       // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
       allPromises.push(extFilePromise);
-
-      // indicate filepath is valid
-      validFilepath = true;
     });
 
     externalDirs.forEach(function(dir) {
-      // flag to be reset when valid filepath is detected
-      let validFilepath = false;
-
       // get content of all files in this directory, concatenated into one metadata object
       //const directoryPath = join(metalsmith.directory(), dir.path);
       const extDirectoryPromise = getDirectoryObject(dir.path, dir.key, allMetadata);
 
       // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
       allPromises.push(extDirectoryPromise);
-
-      // indicate filepath is valid
-      validFilepath = true;
     });
 
     // Promise.all is used to invoke done()
