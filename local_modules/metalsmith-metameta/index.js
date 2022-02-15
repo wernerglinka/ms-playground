@@ -239,7 +239,15 @@ function initMetadata(options) {
     const [localFiles, externalFiles] = bifurcate(allFiles, v => v.path.startsWith(metalsmithSource));
     const [localDirs, externalDirs] = bifurcate(allDirs, v => v.path.startsWith(metalsmithSource));
 
+    /*
+      TODO: only one loop with quatroFurcate ?
+
+      https://www.codeshelper.com/article/2863.html
+    */
+
     localFiles.forEach(function(file){
+      // option path is relative to metalsmith root
+      // convert dir path to be relative to metalsmith source as in files object key
       const filePath = relative(metalsmith.source(), file.path);
       const fileExtension = extension(filePath);
       // flag to be reset when valid filepath is detected
@@ -261,6 +269,8 @@ function initMetadata(options) {
     });
 
     localDirs.forEach(function(dir) {
+      // option path is relative to metalsmith root
+      // convert dir path to be relative to metalsmith source
       const filePath = relative(metalsmith.source(), dir.path);
 
       // flag to be reset when valid filepath is detected
@@ -289,12 +299,10 @@ function initMetadata(options) {
     });
 
     externalFiles.forEach(function(file) {
-      const filePath = file.path;
-      
       // flag to be reset when valid filepath is detected
       let validFilepath = false;
 
-      const extFilePromise = getFileObject(filePath, file.key, allMetadata);
+      const extFilePromise = getFileObject(file.path, file.key, allMetadata);
 
       // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
       allPromises.push(extFilePromise);
