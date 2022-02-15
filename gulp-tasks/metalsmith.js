@@ -87,9 +87,11 @@ module.exports = function metalsmith(callback) {
       localYamlTest: "./src/content/data/yaml-test.yaml",
       localTomlTest: "./src/content/data/toml-test.toml",
       localMixedFolder: "./src/content/data/local-folder-mixed",
+      extFolderTest: "./external-data/ext-json-folder-test",
       extMixedFolder: "./external-data/ext-folder-mixed",
       extJsonTest: "./external-data/ext-json-test.json",
-      extTomlTest: "./external-data/ext-toml-test.toml"
+      extTomlTest: "./external-data/ext-toml-test.toml",
+      extYamlTest: "./external-data/ext-yaml-test.yaml"
     }))
     
     //.use(metameta())

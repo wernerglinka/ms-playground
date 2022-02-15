@@ -65,6 +65,40 @@ function tomlToJSON(string) {
   }
 }
 
+function toJson(file, ext) {
+  let fileContent;
+
+  switch (ext) {
+    case '.yaml':
+    case '.yml':
+      try {
+        fileContent = yamlToJSON(file);
+      } catch(e) {
+        debug(e);
+      }
+      break;
+    case '.toml':
+      try {
+        fileContent = tomlToJSON(file);
+      } catch(e) {
+        debug(e);
+      }
+      break;
+    case '.json':
+      try {
+        fileContent = JSON.parse(file.toString()); // remove line breaks etc from the filebuffer
+      } catch(e) {
+        debug(e);
+      }
+      break;
+    default:
+      fileContent = "";
+      debug("Unsupported file type");
+  }
+
+  return fileContent;
+}
+
 /**
  * getExternalFile
  * Reads file content in either .json, .yaml, .yml or .toml format
@@ -74,23 +108,8 @@ function tomlToJSON(string) {
 async function getExternalFile(filePath) {
   const fileExtension = extension(filePath);
   const fileBuffer = await readFile(filePath);
-  let fileContent;
 
-  switch (fileExtension) {
-    case '.yaml':
-    case '.yml':
-      fileContent = yamlToJSON(fileBuffer);
-      break;
-    case '.toml':
-      fileContent = tomlToJSON(fileBuffer);
-      break;
-    case '.json':
-      fileContent = JSON.parse(fileBuffer.toString()); // remove line breaks etc from the filebuffer
-      break;
-    default:
-      fileContent = JSON.parse(fileBuffer.toString());
-  }
-  return fileContent;
+  return toJson(fileBuffer, fileExtension);
 }
 
 /**
@@ -139,6 +158,7 @@ async function getFileObject(filePath, optionKey, allMetadata) {
 async function getDirectoryObject(directoryPath, optionKey, allMetadata) {
   return getDirectoryFiles(directoryPath)
     .then((fileBuffers) => {
+
       const groupMetadata = [];
       fileBuffers.forEach((fileBuffer) => {
         groupMetadata.push(fileBuffer);
@@ -188,7 +208,7 @@ function initMetadata(options) {
 
   //debug("Receiving options: %O", options)
 
-  return function metadata(files, metalsmith, done) {
+  return function metameta(files, metalsmith, done) {
     // return if no options
     if(Object.keys(options).length === 0) {
       done("No metadata source options");
@@ -200,6 +220,9 @@ function initMetadata(options) {
     // used with Promise.allSettled to invoke done()
     const allPromises = [];
 
+    // array to hold all error
+    const errors = [];
+
     // create array with all option values relative to metalsmith directory
     const allOptions = Object.keys(options).map(key => (
       {
@@ -208,11 +231,11 @@ function initMetadata(options) {
       }
     ));
 
-    // get relative metalsmith source directory
+    // get metalsmith source directory
     const metalsmithSource = relative(metalsmith.directory(), metalsmith.source());
     
     // divide into local and external files and directories
-    const [allFiles, allDirs] = bifurcate(allOptions, v => v.path.match('(ya?ml|toml|json)'));
+    const [allFiles, allDirs] = bifurcate(allOptions, v => !!extension(v.path));
     const [localFiles, externalFiles] = bifurcate(allFiles, v => v.path.startsWith(metalsmithSource));
     const [localDirs, externalDirs] = bifurcate(allDirs, v => v.path.startsWith(metalsmithSource));
 
@@ -222,19 +245,8 @@ function initMetadata(options) {
       // flag to be reset when valid filepath is detected
       let validFilepath = false;
 
-      let metadata;
       // get the data from file object
-      try {
-        metadata = files[filePath].contents.toString();
-      } catch (error) {
-        done(error);
-      }
-      if (!!fileExtension.match('(ya?ml)')) {
-        metadata = JSON.stringify(yamlToJSON(metadata));
-      }
-      if (fileExtension === '.toml') {
-        metadata = JSON.stringify(tomlToJSON(metadata));
-      }
+      const metadata = JSON.stringify(toJson(files[filePath].contents, fileExtension));
 
       // to temp meta object
       allMetadata[file.key] = JSON.parse(metadata);
@@ -259,25 +271,11 @@ function initMetadata(options) {
         const fileExtension = extension(file);
         if (file.includes(filePath)) {
           
-          if (!!fileExtension.match('(ya?ml|toml|json)')) {
-            let metadata;
-            // get the data from file object
-            try {
-              metadata = files[file].contents.toString();
-            } catch (error) {
-              done(error);
-            }
-            if (fileExtension === '.yaml' || fileExtension === '.yml') {
-              metadata = JSON.stringify(yamlToJSON(metadata));
-            }
-            if (fileExtension === '.toml') {
-              metadata = JSON.stringify(tomlToJSON(metadata));
-            }
+          // get the data from file object
+          const metadata = JSON.stringify(toJson(files[file].contents, fileExtension));
 
-            groupMetadata.push(JSON.parse(metadata));
-          } else {
-            done(`${fileExtension} is not a valid file type`);
-          }
+          groupMetadata.push(JSON.parse(metadata));
+          
         }
       });
 
@@ -293,7 +291,6 @@ function initMetadata(options) {
     externalFiles.forEach(function(file) {
       const filePath = file.path;
       
-
       // flag to be reset when valid filepath is detected
       let validFilepath = false;
 
@@ -307,16 +304,18 @@ function initMetadata(options) {
     });
 
     externalDirs.forEach(function(dir) {
-    
       // flag to be reset when valid filepath is detected
       let validFilepath = false;
+
+      // get content of all files in this directory, concatenated into one metadata object
+      //const directoryPath = join(metalsmith.directory(), dir.path);
       const extDirectoryPromise = getDirectoryObject(dir.path, dir.key, allMetadata);
 
-          // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
-          allPromises.push(extDirectoryPromise);
+      // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
+      allPromises.push(extDirectoryPromise);
 
-          // indicate filepath is valid
-          validFilepath = true;
+      // indicate filepath is valid
+      validFilepath = true;
     });
 
     // Promise.all is used to invoke done()
