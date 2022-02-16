@@ -26,19 +26,39 @@ function normalizeOptions(options) {
 }
 
 /**
- * bifurcate
- * Function to split array values into two groups based on a condition
- * source: https://toncho.dev/javascript/javascript-array-bifurcate/
+ * groupMetadataSources
+ * Function to split array values into four groups
+ * - local files in Metalsmith source folder
+ * - local directories in Metalsmith source folder
+ * - external files outside Metalsmith source folder but in Metalsmith directory
+ * - external directories outside Metalsmith source folder but in Metalsmith directory
+ * 
  * @param {array} arr 
  * @param {function} filter 
  * 
  */
-function bifurcate(arr, filter) {
-  return arr.reduce((accumulator, value) => { 
-    accumulator[filter(value) ? 0 : 1].push(value);
-    return accumulator;
-  }, [[], []]);
+function groupMetadataSources(arr, src) {
+  return arr.reduce((accu, value) => {
+    // local file
+    if(!!extension(value.path) && value.path.startsWith(src)) {
+      accu[0].push(value);
+    }
+    // local directory
+    if(!extension(value.path) && value.path.startsWith(src)) {
+      accu[1].push(value);
+    }
+    // external file
+    if(!!extension(value.path) && !value.path.startsWith(src)) {
+      accu[2].push(value);
+    }
+    // external directory
+    if(!extension(value.path) && !value.path.startsWith(src)) {
+      accu[3].push(value);
+    }
+    return accu;
+  }, [[],[],[],[]]);
 }
+
 /**
  * YAML to JSON
  * @param {*} string - YAML file
@@ -65,6 +85,13 @@ function tomlToJSON(string) {
   }
 }
 
+/**
+ * toJson
+ * Converts YAML, YML, TOML and filebuffer to JSON
+ * @param {string} file 
+ * @param {string} ext 
+ * @returns JSON object literal
+ */
 function toJson(file, ext) {
   let fileContent;
 
@@ -78,8 +105,8 @@ function toJson(file, ext) {
       }
       break;
     case '.toml':
-      try {
-        fileContent = tomlToJSON(file);
+      try { // remove object prototype
+        fileContent = JSON.parse(JSON.stringify(tomlToJSON(file)));
       } catch(e) {
         debug(e);
       }
@@ -171,7 +198,7 @@ async function getDirectoryObject(directoryPath, optionKey, allMetadata) {
       }
     })
     .catch((e) => {
-      //done(e.message);
+      debug(e);
     });
 }
 
@@ -203,15 +230,13 @@ async function getDirectoryObject(directoryPath, optionKey, allMetadata) {
 
 function initMetadata(options) {
   options = normalizeOptions(options);
-
-
-
-  //debug("Receiving options: %O", options)
+  debug("Receiving options: %O", options)
 
   return function metameta(files, metalsmith, done) {
     // return if no options
     if(Object.keys(options).length === 0) {
-      done("No metadata source options");
+      debug("Found no metadata options");
+      done();
     }
 
     const allMetadata = metalsmith.metadata();
@@ -219,9 +244,6 @@ function initMetadata(options) {
     // array to hold all active promises during external file reads. Will be
     // used with Promise.allSettled to invoke done()
     const allPromises = [];
-
-    // array to hold all error
-    const errors = [];
 
     // create array with all option values relative to metalsmith directory
     const allOptions = Object.keys(options).map(key => (
@@ -233,17 +255,8 @@ function initMetadata(options) {
 
     // get metalsmith source directory
     const metalsmithSource = relative(metalsmith.directory(), metalsmith.source());
-    
-    // divide into local and external files and directories
-    const [allFiles, allDirs] = bifurcate(allOptions, v => !!extension(v.path));
-    const [localFiles, externalFiles] = bifurcate(allFiles, v => v.path.startsWith(metalsmithSource));
-    const [localDirs, externalDirs] = bifurcate(allDirs, v => v.path.startsWith(metalsmithSource));
-
-    /*
-      TODO: only one loop with quatroFurcate ?
-
-      https://www.codeshelper.com/article/2863.html
-    */
+    // group option values into local/external files/directories
+    const [localFiles, localDirs, externalFiles, externalDirs] = groupMetadataSources(allOptions, metalsmithSource);
 
     localFiles.forEach(function(file){
       // option path is relative to metalsmith root
@@ -252,12 +265,12 @@ function initMetadata(options) {
       const fileExtension = extension(filePath);
 
       // get the data from file object
-      const metadata = JSON.stringify(toJson(files[filePath].contents, fileExtension));
+      const metadata = toJson(files[filePath].contents, fileExtension);
 
       // to temp meta object
-      allMetadata[file.key] = JSON.parse(metadata);
+      allMetadata[file.key] = metadata;
 
-      //debug("Adding this to metadata: %O", metadata);
+      debug("Adding these local files to metadata: %O", metadata);
 
       // ... and remove this file from the metalsmith build process
       delete files[file.key];
@@ -272,11 +285,12 @@ function initMetadata(options) {
       Object.keys(files).forEach(function (file) {
         const fileExtension = extension(file);
         if (file.includes(filePath)) {
-          
           // get the data from file object
-          const metadata = JSON.stringify(toJson(files[file].contents, fileExtension));
+          const metadata = toJson(files[file].contents, fileExtension);
 
-          groupMetadata.push(JSON.parse(metadata));
+          debug("Adding these local directories to metadata: %O", metadata);
+
+          groupMetadata.push(metadata);
           
         }
       });
