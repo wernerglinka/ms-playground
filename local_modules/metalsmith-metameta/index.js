@@ -255,6 +255,7 @@ function initMetadata(options) {
 
     // get metalsmith source directory
     const metalsmithSource = relative(metalsmith.directory(), metalsmith.source());
+
     // group option values into local/external files/directories
     const [localFiles, localDirs, externalFiles, externalDirs] = groupMetadataSources(allOptions, metalsmithSource);
 
@@ -311,7 +312,6 @@ function initMetadata(options) {
 
     externalDirs.forEach(function(dir) {
       // get content of all files in this directory, concatenated into one metadata object
-      //const directoryPath = join(metalsmith.directory(), dir.path);
       const extDirectoryPromise = getDirectoryObject(dir.path, dir.key, allMetadata);
 
       // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
@@ -319,7 +319,7 @@ function initMetadata(options) {
     });
 
     // Promise.all is used to invoke done()
-    Promise.all(allPromises).then(() => done());
+    Promise.allSettled(allPromises).then(() => done());
   };
 }
 
