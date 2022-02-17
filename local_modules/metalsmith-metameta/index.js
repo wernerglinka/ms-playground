@@ -135,7 +135,6 @@ function toJson(file, ext) {
 async function getExternalFile(filePath) {
   const fileExtension = extension(filePath);
   const fileBuffer = await readFile(filePath);
-
   return toJson(fileBuffer, fileExtension);
 }
 
@@ -249,7 +248,8 @@ function initMetadata(options) {
     const allOptions = Object.keys(options).map(key => (
       {
         "key": key,
-        "path": relative(metalsmith.directory(), options[key])
+        //"path": relative(metalsmith.directory(), options[key])
+        "path": options[key].replace("./", "")
       }
     ));
 
@@ -261,8 +261,8 @@ function initMetadata(options) {
 
     localFiles.forEach(function(file){
       // option path is relative to metalsmith root
-      // convert dir path to be relative to metalsmith source as in files object key
-      const filePath = relative(metalsmith.source(), file.path);
+      // const filePath = relative(metalsmith.source(), file.path);
+      const filePath = file.path.replace(`${metalsmithSource}/`, "");
       const fileExtension = extension(filePath);
 
       // get the data from file object
@@ -280,7 +280,7 @@ function initMetadata(options) {
     localDirs.forEach(function(dir) {
       // option path is relative to metalsmith root
       // convert dir path to be relative to metalsmith source
-      const filePath = relative(metalsmith.source(), dir.path);
+      const filePath = dir.path.replace(`${metalsmithSource}/`, "");
 
       const groupMetadata = [];
       Object.keys(files).forEach(function (file) {
@@ -304,7 +304,8 @@ function initMetadata(options) {
     });
 
     externalFiles.forEach(function(file) {
-      const extFilePromise = getFileObject(file.path, file.key, allMetadata);
+      const filePath = join(metalsmith.directory(), file.path);
+      const extFilePromise = getFileObject(filePath, file.key, allMetadata);
 
       // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
       allPromises.push(extFilePromise);
@@ -312,7 +313,8 @@ function initMetadata(options) {
 
     externalDirs.forEach(function(dir) {
       // get content of all files in this directory, concatenated into one metadata object
-      const extDirectoryPromise = getDirectoryObject(dir.path, dir.key, allMetadata);
+      const directoryPath = join(metalsmith.directory(), dir.path);
+      const extDirectoryPromise = getDirectoryObject(directoryPath, dir.key, allMetadata);
 
       // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
       allPromises.push(extDirectoryPromise);
