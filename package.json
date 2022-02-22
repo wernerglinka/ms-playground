@@ -51,6 +51,7 @@
     "metalsmith-markdown-partials": "^2.0.1",
     "metalsmith-metadata": "github:wernerglinka/metalsmith-metadata",
     "metalsmith-writemetadata": "^0.4.5",
+    "node-recursive-directory": "^1.2.0",
     "nunjucks-capture": "^1.0.4",
     "nunjucks-markdown-filter": "^0.1.0",
     "sass": "^1.43.4",

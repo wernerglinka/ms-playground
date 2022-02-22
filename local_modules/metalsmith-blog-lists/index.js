@@ -44,7 +44,6 @@ function initBlogLists(options) {
     const featuredBlogPosts = [];
     const allSortedBlogPosts = [];
     const annualizedBlogPosts = [];
-    const unsortedAnnualizedBlogPosts = [];
     let temp;
 
     Object.keys(files).forEach(function(file){

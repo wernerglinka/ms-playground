@@ -82,20 +82,13 @@ module.exports = function metalsmith(callback) {
     })
 
     .use(metameta({
-      site: "./src/content/data/siteMetadata.json",
-      localJsonTest: "./src/content/data/json-test.json",
-      localYamlTest: "./src/content/data/yaml-test.yaml",
-      localTomlTest: "./src/content/data/toml-test.toml",
-      localMixedFolder: "./src/content/data/local-folder-mixed",
-      extFolderTest: "./external-data/ext-json-folder-test",
-      extMixedFolder: "./external-data/ext-folder-mixed",
-      extJsonTest: "./external-data/ext-json-test.json",
-      extTomlTest: "./external-data/ext-toml-test.toml",
-      extYamlTest: "./external-data/ext-yaml-test.yaml"
+      localJson: "src/content/data/json-test.json",
+      extToml: "external-data/ext-folder-mixed",
+      external: "external-data/external-folder/file.json",
+      localMixedFolder: "src/content/data/local-folder-mixed",
+      extMixedFolder: "external-data/ext-folder-mixed"
     }))
     
-    //.use(metameta())
-
     .use(drafts())
 
     /*

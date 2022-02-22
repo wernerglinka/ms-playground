@@ -7,6 +7,7 @@ const {
 const { relative, join, extname: extension, sep, basename, dirname } = require('path');
 const yaml = require('js-yaml');
 const toml = require('toml');
+const getFiles = require('node-recursive-directory');
 
 /**
  * @typedef Options
@@ -144,8 +145,8 @@ async function getExternalFile(filePath) {
  * @returns List of all files in the directory
  */
 async function getDirectoryFiles(directoryPath) {
-  const fileList = await readdir(directoryPath);
-  return await getDirectoryFilesContent(directoryPath, fileList);
+  const files = await getFiles(directoryPath);
+  return await getDirectoryFilesContent(files);
 }
 
 /**
@@ -154,9 +155,9 @@ async function getDirectoryFiles(directoryPath) {
  * @param {*} fileList
  * @returns The content of all files in a directory
  */
-async function getDirectoryFilesContent(directoryPath, fileList) {
+async function getDirectoryFilesContent(fileList) {
   const fileContent = await fileList.map(async (file) => {
-    return await getExternalFile(join(directoryPath, file));
+    return await getExternalFile(file);
   });
   return await Promise.all(fileContent);
 }
@@ -200,6 +201,7 @@ async function getDirectoryObject(directoryPath, optionKey, allMetadata) {
       debug(e);
     });
 }
+
 
 /**
  * A Metalsmith plugin to read files with metadata
@@ -248,8 +250,7 @@ function initMetadata(options) {
     const allOptions = Object.keys(options).map(key => (
       {
         "key": key,
-        //"path": relative(metalsmith.directory(), options[key])
-        "path": options[key].replace("./", "")
+        "path": options[key]
       }
     ));
 
