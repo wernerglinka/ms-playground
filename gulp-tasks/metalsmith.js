@@ -47,6 +47,7 @@ const workingDir = path.join(__dirname, '../');
 
 const mdPartials = require('metalsmith-markdown-partials');
 const metameta = require('../local_modules/metalsmith-metameta');
+const cleanmeta = require('../local_modules/clean-meta');
 
 // Define engine options for the inplace and layouts plugins
 const templateConfig = {
@@ -82,11 +83,16 @@ module.exports = function metalsmith(callback) {
     })
 
     .use(metameta({
-      localJson: "src/content/data/json-test.json",
+      site: "src/content/data/siteMetadata.json",
+      localJson: "src/content/data/json-test2.json",
       extToml: "external-data/ext-folder-mixed",
-      external: "external-data/external-folder/file.json",
+      extJsonTest: "external-data/ext-json-test.json",
       localMixedFolder: "src/content/data/local-folder-mixed",
-      extMixedFolder: "external-data/ext-folder-mixed"
+      extMixedFolder: "external-data/ext-folder-mixed",
+      "tiered.config": "src/content/data/json-test2.json",
+      "tiered.other": "src/content/data/json-test2.json",
+      "nestedDir.config": "src/content/data/local-folder-mixed",
+      "nestedDir.other": "src/content/data/local-folder-mixed",
     }))
     
     .use(drafts())

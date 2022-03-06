@@ -6,7 +6,14 @@ const {
 } = require('fs');
 const { relative, join, extname: extension, sep, basename, dirname } = require('path');
 const yaml = require('js-yaml');
-const toml = require('toml');
+let toml
+try {
+  toml = require('toml').parse
+} catch (err) {
+  toml = () => {
+    throw new Error('To use toml you must install it first, run "npm i toml"')
+  }
+}
 const getFiles = require('node-recursive-directory');
 
 /**
@@ -25,6 +32,17 @@ const defaults = {};
 function normalizeOptions(options) {
   return Object.assign({}, defaults, options || {});
 }
+
+/**
+ * Supported metadata parsers.
+ */
+ const parsers = {
+  '.json': JSON.parse,
+  '.yaml': yaml.load,
+  '.yml': yaml.load,
+  '.toml': toml
+}
+
 
 /**
  * groupMetadataSources
@@ -60,31 +78,26 @@ function groupMetadataSources(arr, src) {
   }, [[],[],[],[]]);
 }
 
-/**
- * YAML to JSON
- * @param {*} string - YAML file
- * @returns .json string
- */
-function yamlToJSON(string) {
-  try {
-    return yaml.load(string);
-  } catch (e) {
-    throw `error converting yaml to json: ${e}`;
-  }
-}
 
 /**
- * TOML to JSON
- * @param {*} string - TOML file
- * @returns .json string
+ * getNestedObject
+ * Function to build a nested object from a file key with dots
+ * @param {*} fileKey 
+ * @param {*} Obj 
+ * @returns nested object
  */
-function tomlToJSON(string) {
-  try {
-    return toml.parse(string);
-  } catch (e) {
-    throw `error converting toml to json: ${e}`;
-  }
+function getNestedObject(fileKey, Obj) {
+  const path = fileKey.split('.');
+  const resultingObject = path.reverse().reduce((acc, key, index, arr) => {
+    // the last path element will receive the metadata
+    // all others are just nested object properties
+    return { [key]: index !== 0 ? acc : Obj };
+  }, {});
+
+  // remove the outer key as that is the key in the metalsmith metadata object
+  return resultingObject[path[path.length-1]];
 }
+
 
 /**
  * toJson
@@ -93,38 +106,13 @@ function tomlToJSON(string) {
  * @param {string} ext 
  * @returns JSON object literal
  */
-function toJson(file, ext) {
-  let fileContent;
-
-  switch (ext) {
-    case '.yaml':
-    case '.yml':
-      try {
-        fileContent = yamlToJSON(file);
-      } catch(e) {
-        debug(e);
-      }
-      break;
-    case '.toml':
-      try { // remove object prototype
-        fileContent = JSON.parse(JSON.stringify(tomlToJSON(file)));
-      } catch(e) {
-        debug(e);
-      }
-      break;
-    case '.json':
-      try {
-        fileContent = JSON.parse(file.toString()); // remove line breaks etc from the filebuffer
-      } catch(e) {
-        debug(e);
-      }
-      break;
-    default:
-      fileContent = "";
-      debug("Unsupported file type");
+function toJson(file, path) {
+  const parser = parsers[extension(path)];
+  try {
+    return parser(file);
+  } catch {
+    throw new Error('malformed data in "' + path + '"');
   }
-
-  return fileContent;
 }
 
 /**
@@ -134,9 +122,8 @@ function toJson(file, ext) {
  * @returns Content of the file in .json
  */
 async function getExternalFile(filePath) {
-  const fileExtension = extension(filePath);
   const fileBuffer = await readFile(filePath);
-  return toJson(fileBuffer, fileExtension);
+  return toJson(fileBuffer, filePath);
 }
 
 /**
@@ -146,7 +133,16 @@ async function getExternalFile(filePath) {
  */
 async function getDirectoryFiles(directoryPath) {
   const files = await getFiles(directoryPath);
-  return await getDirectoryFilesContent(files);
+
+  const newFiles = files.map(file => {
+    const key = file.replace(directoryPath, '').substring(1).replace(extension(file), "");
+    return {
+      key,
+      path: file
+    }
+  })
+  
+  return await getDirectoryFilesContent(files, newFiles);
 }
 
 /**
@@ -155,11 +151,15 @@ async function getDirectoryFiles(directoryPath) {
  * @param {*} fileList
  * @returns The content of all files in a directory
  */
-async function getDirectoryFilesContent(fileList) {
-  const fileContent = await fileList.map(async (file) => {
-    return await getExternalFile(file);
+async function getDirectoryFilesContent(fileList, newList) {
+  const filesContent = await newList.map(async (file) => {
+    const data = await getExternalFile(file.path);
+    return {
+      key: file.key,
+      fileContent: data
+    }
   });
-  return await Promise.all(fileContent);
+  return await Promise.all(filesContent);
 }
 
 /**
@@ -172,6 +172,7 @@ async function getDirectoryFilesContent(fileList) {
 async function getFileObject(filePath, optionKey, allMetadata) {
   return getExternalFile(filePath).then((fileBuffer) => {
     allMetadata[optionKey] = fileBuffer;
+    debug("Adding this external file to metadata: %O", fileBuffer);
   });
 }
 
@@ -184,15 +185,16 @@ async function getFileObject(filePath, optionKey, allMetadata) {
  */
 async function getDirectoryObject(directoryPath, optionKey, allMetadata) {
   return getDirectoryFiles(directoryPath)
-    .then((fileBuffers) => {
+    .then((files) => {
 
-      const groupMetadata = [];
-      fileBuffers.forEach((fileBuffer) => {
-        groupMetadata.push(fileBuffer);
+      const groupMetadata = {};
+      files.forEach((file) => {
+        groupMetadata[file.key] = file.fileContent;
       });
 
       if (groupMetadata.length) {
         allMetadata[optionKey] = groupMetadata;
+        debug("Adding this external directory to metadata: %O", groupMetadata);
       } else {
         done(`No files found in this directory "${key}"`);
       }
@@ -243,7 +245,7 @@ function initMetadata(options) {
     const allMetadata = metalsmith.metadata();
 
     // array to hold all active promises during external file reads. Will be
-    // used with Promise.allSettled to invoke done()
+    // used with Promise.all to invoke done()
     const allPromises = [];
 
     // create array with all option values relative to metalsmith directory
@@ -264,15 +266,23 @@ function initMetadata(options) {
       // option path is relative to metalsmith root
       // const filePath = relative(metalsmith.source(), file.path);
       const filePath = file.path.replace(`${metalsmithSource}/`, "");
-      const fileExtension = extension(filePath);
 
       // get the data from file object
-      const metadata = toJson(files[filePath].contents, fileExtension);
+      const metadata = toJson(files[filePath].contents, filePath);
 
-      // to temp meta object
-      allMetadata[file.key] = metadata;
-
-      debug("Adding these local files to metadata: %O", metadata);
+      // if the file key includes a '.', then we assume a nested object
+      if(file.key.includes('.')) {
+        // get the nested object 
+        const newMetadata = getNestedObject(file.key, metadata);
+        // update the metadata object
+        const path = file.key.split('.');
+        allMetadata[path[0]] = Object.assign({}, allMetadata[path[0]], newMetadata)
+        debug("Adding this nested object to metadata: %O", metadata);
+      } else {
+        // to temp meta object
+        allMetadata[file.key] = metadata;
+        debug("Adding this local file to metadata: %O", metadata);
+      }
 
       // ... and remove this file from the metalsmith build process
       delete files[file.key];
@@ -285,20 +295,28 @@ function initMetadata(options) {
 
       const groupMetadata = [];
       Object.keys(files).forEach(function (file) {
-        const fileExtension = extension(file);
         if (file.includes(filePath)) {
           // get the data from file object
-          const metadata = toJson(files[file].contents, fileExtension);
-
-          debug("Adding these local directories to metadata: %O", metadata);
-
-          groupMetadata.push(metadata);
-          
+          const metadata = toJson(files[file].contents, file);
+          groupMetadata.push(metadata); 
         }
       });
 
       if (groupMetadata.length) {
-        allMetadata[dir.key] = groupMetadata;
+        
+        // if the file key includes a '.', then we assume a nested object
+        if(dir.key.includes('.')) {
+          // get the nested object 
+          const newMetadata = getNestedObject(dir.key, groupMetadata);
+          // update the metadata object
+          const path = dir.key.split('.');
+          allMetadata[path[0]] = Object.assign({}, allMetadata[path[0]], newMetadata)
+          debug("Adding this nested object to metadata: %O", groupMetadata);
+        } else {
+          allMetadata[dir.key] = groupMetadata;
+          debug("Adding this local directory to metadata: %O", groupMetadata);
+        }
+
       } else {
         done(`No files found in this directory "${dir}"`);
       }
@@ -317,12 +335,14 @@ function initMetadata(options) {
       const directoryPath = join(metalsmith.directory(), dir.path);
       const extDirectoryPromise = getDirectoryObject(directoryPath, dir.key, allMetadata);
 
-      // add this promise to allPromises array. Will be later used with Promise.allSettled to invoke done()
+      // add this promise to allPromises array. Will be later used with Promise.all to invoke done()
       allPromises.push(extDirectoryPromise);
     });
 
     // Promise.all is used to invoke done()
-    Promise.allSettled(allPromises).then(() => done());
+    Promise.all(allPromises).then(() => {
+      debug(metalsmith.metadata());
+      return done()});
   };
 }
 
