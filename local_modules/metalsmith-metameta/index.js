@@ -171,8 +171,19 @@ async function getDirectoryFilesContent(fileList, newList) {
  */
 async function getFileObject(filePath, optionKey, allMetadata) {
   return getExternalFile(filePath).then((fileBuffer) => {
-    allMetadata[optionKey] = fileBuffer;
-    debug("Adding this external file to metadata: %O", fileBuffer);
+
+    // if the file key includes a '.', then we assume a nested object
+    if(optionKey.includes('.')) {
+      // get the nested object 
+      const newMetadata = getNestedObject(optionKey, fileBuffer);
+      // update the metadata object
+      const path = optionKey.split('.');
+      allMetadata[path[0]] = Object.assign({}, allMetadata[path[0]], newMetadata)
+      debug("Adding this nested object to metadata: %O", allMetadata);
+    } else {
+      allMetadata[optionKey] = fileBuffer;
+      debug("Adding this external file to metadata: %O", fileBuffer);
+    }
   });
 }
 
@@ -183,18 +194,28 @@ async function getFileObject(filePath, optionKey, allMetadata) {
  * @param {*} allMetadata
  * @returns promise to push concatenated metafile object of all directory files to metalsmith metadata object
  */
-async function getDirectoryObject(directoryPath, optionKey, allMetadata) {
+ async function getDirectoryObject(directoryPath, optionKey, allMetadata) {
   return getDirectoryFiles(directoryPath)
-    .then((files) => {
+    .then((fileBuffers) => {
 
-      const groupMetadata = {};
-      files.forEach((file) => {
-        groupMetadata[file.key] = file.fileContent;
+      const groupMetadata = [];
+      fileBuffers.forEach((fileBuffer) => {
+        groupMetadata.push(fileBuffer);
       });
 
       if (groupMetadata.length) {
-        allMetadata[optionKey] = groupMetadata;
-        debug("Adding this external directory to metadata: %O", groupMetadata);
+        // if the file key includes a '.', then we assume a nested object
+        if(optionKey.includes('.')) {
+          // get the nested object 
+          const newMetadata = getNestedObject(optionKey, groupMetadata);
+          // update the metadata object
+          const path = optionKey.split('.');
+          allMetadata[path[0]] = Object.assign({}, allMetadata[path[0]], newMetadata)
+          debug("Adding this nested object to metadata: %O", groupMetadata);
+        } else {
+          allMetadata[optionKey] = groupMetadata;
+          debug("Adding this local directory to metadata: %O", groupMetadata);
+        }
       } else {
         done(`No files found in this directory "${key}"`);
       }

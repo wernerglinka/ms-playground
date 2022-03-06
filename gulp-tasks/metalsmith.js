@@ -93,6 +93,10 @@ module.exports = function metalsmith(callback) {
       "tiered.other": "src/content/data/json-test2.json",
       "nestedDir.config": "src/content/data/local-folder-mixed",
       "nestedDir.other": "src/content/data/local-folder-mixed",
+      "nested.nav": "external-data/ext-json-test.json",
+      "nested.whatever": "external-data/ext-json-test.json",
+      "nestedExtDir.yup": "external-data/ext-folder-mixed",
+      "nestedExtDir.yahoo": "external-data/ext-folder-mixed",
     }))
     
     .use(drafts())
